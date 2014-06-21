@@ -8,6 +8,13 @@ stylus=require 'stylus'
 
 waiting_list={}
 
+pick_3 = (large_list) ->
+  results = []
+  until results.length is 3
+    result = large_list[Math.floor(Math.random() *  large_list.length)]
+    results.push result unless result of results
+  results
+
 uuid=->JSON.stringify Math.random()*1e16
 
 require('zappajs') 3000,'0.0.0.0',->
