@@ -15,47 +15,6 @@ OPENTOK_API_KEY='44867752'
 # Globals.
 waiting_list={}
 
-dictionary_things = [
-	['Animal', 'חיה', 'animal']
-	['Bread', 'לחם', 'pan']
-	['Fire', 'אש', 'fuego']
-	['Country', 'ארץ', 'país']
-	['Day', 'יום', 'día']
-	['Gold', 'זהב', 'oro']
-	['Paper', 'נייר', 'papel']
-	['Voice', 'קול', 'voz']
-	['Word', 'מילה', 'palabra']
-	['Sky', 'שמיים', 'cielo']
-]
-
-dictionary_operations = [
-	['Get', 'השג', 'conseguir']
-	['Give', 'תן', 'dar']
-	['Go', 'לך', 'ir']
-	['Make', 'עשה', 'hacer']
-	['Put', 'שים', 'poner']
-	['Take', 'קח', 'tomar']
-	['Be', 'היה', 'ser']
-	['Have', 'יש', 'tener']
-	['Say', 'אמור', 'decir']
-	['Will', 'מוכן', 'voluntad']
-]
-
-dictionary_qualities = [
-	['Black', 'שחור', 'negro']
-	['Cheap', 'זול', 'barato']
-	['Clean', 'נקי', 'limpio']
-	['Clear', 'שקוף', 'claro']
-	['Strong', 'חזק', 'fuerte']
-	['Happy', 'שמח', 'feliz']
-	['Hard', 'קשה', 'duro']
-	['Dark', 'אפל', 'oscuro']
-	['Old', 'ישן', 'viejo']
-	['Sad', 'עצוב', 'triste']
-]
-
-dictionaries=[dictionary_qualities, dictionary_operations, dictionary_things]
-
 # OpenTok stuff.
 generate_OT_keys=(cb)->
 	console.log 'generate_OT_keys'
@@ -76,13 +35,6 @@ generate_OT_keys=(cb)->
 		cb result.sessionId,token
 
 # Utilities.
-pick_words = ->
-  results = []
-  for dictionary of dictionaries
-    result = dictionary[Math.floor(Math.random() * dictionary.length)]
-    results.push result  unless result of results
-  results
-
 uuid=->JSON.stringify Math.random()*1e16
 
 # App!
@@ -108,19 +60,22 @@ require('zappajs') 3000,'0.0.0.0',->
 			div 'class':'spinner timer'
 			p 'Waiting for other player to connect…'
 		section id:'game',->
-			button id:'lever'
+			button id:'play',->
+				'Play!'
 			div 'class':'slot'
 			div 'class':'slot'
 			div 'class':'slot'
 			video id:'myself'
 			video id:'partner'
-		section id:'give-score',->
-			input type:'range'
-		section id:'receive-score',->
-			div ''
-		section id:'next-round',->
-			p ->'Next Round…'
-			input type:'text',placeholder:'Wildcard'
+			div id:'countdown'
+			div id:'total-score'
+			section id:'give-score',->
+				input type:'range'
+			section id:'receive-score',->
+				div ''
+			section id:'next-round',->
+				p ->'Next Round…'
+				input type:'text',placeholder:'Wildcard'
 
 	# Catchall route??? Eh, no.
 	@get '/':->
@@ -174,19 +129,72 @@ section
 			r=@client.room=uuid()
 			@join r
 			k="#{@data.herlang}:#{@data.mylang}"
-			if k of waiting_list then waiting_list[k].push r else waiting_list[k]=[r]
+			if k of waiting_list then waiting_list[k].push(r) else waiting_list[k]=[r]
 			@ack 'please hold'
 		else
-			p=waiting_list[k].shift()
+			p=@client.room=waiting_list[k].shift()
 			@ack 'found partner in room '+p
 			@join p
 			# Generate OT keys.
 			generate_OT_keys (s,t)=>
 				@broadcast_to p,'start playing',[s,t]
 
+	@on 'end round':->
+		@broadcast_to @client.room,'end round'
+
+	@on 'picked word':->
+		@broadcast_to @client.room,'picked word',@data
+
 	# Client side code.
 	@client '/app.js':->
 		@connect()
+
+		pick_words = ->
+
+			results = []
+			for d of dictionaries
+				r = d[Math.floor(Math.random() * d.length)]
+				results.push r unless r in results
+			results
+
+		# Dictionary.
+		dictionary_things = [
+			['Animal', 'חיה', 'animal']
+			['Bread', 'לחם', 'pan']
+			['Fire', 'אש', 'fuego']
+			['Country', 'ארץ', 'país']
+			['Day', 'יום', 'día']
+			['Gold', 'זהב', 'oro']
+			['Paper', 'נייר', 'papel']
+			['Voice', 'קול', 'voz']
+			['Word', 'מילה', 'palabra']
+			['Sky', 'שמיים', 'cielo']
+		]
+		dictionary_operations = [
+			['Get', 'השג', 'conseguir']
+			['Give', 'תן', 'dar']
+			['Go', 'לך', 'ir']
+			['Make', 'עשה', 'hacer']
+			['Put', 'שים', 'poner']
+			['Take', 'קח', 'tomar']
+			['Be', 'היה', 'ser']
+			['Have', 'יש', 'tener']
+			['Say', 'אמור', 'decir']
+			['Will', 'מוכן', 'voluntad']
+		]
+		dictionary_qualities = [
+			['Black', 'שחור', 'negro']
+			['Cheap', 'זול', 'barato']
+			['Clean', 'נקי', 'limpio']
+			['Clear', 'שקוף', 'claro']
+			['Strong', 'חזק', 'fuerte']
+			['Happy', 'שמח', 'feliz']
+			['Hard', 'קשה', 'duro']
+			['Dark', 'אפל', 'oscuro']
+			['Old', 'ישן', 'viejo']
+			['Sad', 'עצוב', 'triste']
+		]
+		dictionaries=[dictionary_qualities, dictionary_operations, dictionary_things]
 
 		# Client side SIO events.
 		@on 'your partner left':->
@@ -206,7 +214,42 @@ section
 				session.subscribe ev.stream,'#partner'
 			$ '#waiting,#game'
 			.toggle()
+			start_round()
 
+		@on 'end round':->
+			window.im_student=not window.im_student
+			start_round()
+
+		# Slot roulette.
+		spin_slot=(i,w)=>
+			@emit 'picked word',[i,w]
+
+		@on 'picked word':->
+			[i,w]=@data
+			ss=$ '.slot'
+			$ ss[i]
+			.append $ '<span>#{w[0]}'
+			.append $ '<span>#{w[1]}'
+			.append $ '<span>#{w[2]}'
+
+		start_countdown= =>
+			count_down= =>
+				countdown -=1/Math.PI
+				if countdown<0
+					clearInterval int
+					@emit 'end round'
+				else $('#countdown').text countdown
+
+			window.countdown=20.0
+			$('#countdown').text countdown
+			int=setInterval count_down,1e3/Math.PI
+
+		# Game logic.
+		start_round=->
+			$ '#game'
+			.toggleClass 'student',im_student
+			$ '#play'
+			.toggle im_student
 
 		$ =>
 			$ 'html'
@@ -229,6 +272,17 @@ section
 				# Tell server to find me a matching partner.
 				@emit 'find me a partner',d,(r)->
 					console.log 'find me a partner ack:',r
+					window.im_student=r is 'please hold'
+					console.log 'im_student:',im_student
+
+			$ '#play'
+			.click (ev)->
+				ev.preventDefault()
+				if im_student
+					ws=pick_words()
+					console.log ws
+					spin_slot i,ws[i] for i in [0..2]
+				start_countdown()
 
 #$('body').on 'click','button.trinket',(ev)->
 #	total+=parseInt(($(ev.target).text().match /\$(\d+)/)[1])
