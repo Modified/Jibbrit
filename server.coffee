@@ -4,19 +4,23 @@ Jibbrit
 - 2014-06-20: created for AngelHack 2014 TLV.
 ###
 
+# Dependencies.
 stylus=require 'stylus'
 
+# Globals.
 waiting_list={}
 
-pick_3 = (large_list) ->
-  results = []
-  until results.length is 3
-    result = large_list[Math.floor(Math.random() *  large_list.length)]
-    results.push result unless result of results
-  results
+# Functions.
+pick_3=(large_list)->
+	results=[]
+	until results.length is 3
+		result=large_list[Math.floor(Math.random()*large_list.length)]
+		results.push result unless result of results
+	results
 
 uuid=->JSON.stringify Math.random()*1e16
 
+# App!
 require('zappajs') 3000,'0.0.0.0',->
 	@use @app.logger
 	@use static:__dirname+'/assets'
