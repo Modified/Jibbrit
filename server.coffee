@@ -99,7 +99,7 @@ section
 		k="#{@data.mylang}:#{@data.herlang}"
 		if waiting_list[k]
 			p=waiting_list[k].shift()
-			@ack 'found parner in room'+p
+			@ack 'found parner in room '+p
 			@join p
 			@emit 'start playing',p
 			@broadcast_to 'start playing',p
@@ -118,11 +118,11 @@ section
 
 		# Client side SIO events.
 		@on 'start playing':->
-			console.log @data
+			console.log 'playing room:',@data
 			$ '#waiting,#game'
 			.toggle()
 		@on 'your partner left':->
-			console.log @data
+			console.log 'abandoned:',@data
 
 		$ =>
 			$ 'html'
