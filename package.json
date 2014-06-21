@@ -1,0 +1,24 @@
+{
+	"name":"jibber",
+	"version":"0.0.1",
+	"description":"Language learning gamified for two players using inter-lingual video chat.",
+	"private":false,
+	"repository":{"type":"git","url":"https://github.com/Modified/jibbrit.git"},
+	"engines":{
+		"node":"0.10.x",
+		"npm":"1.3.x"
+	},
+	"main": "server.coffee",
+	"author": "Jibber Team <ilan@decodecode.net>",
+	"license": "No",
+	"dependencies":{
+		"zappajs": "~0.4.22",
+		"zappajs-partials":"",
+		"coffee-script": "1.7.x",
+		"stylus":""
+	},
+	"scripts":{
+		"start":"coffee server.coffee",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	}
+}
