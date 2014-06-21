@@ -6,59 +6,83 @@ Jibbrit
 
 # Dependencies.
 stylus=require 'stylus'
+OpenTok=require 'opentok'
+
+# OpenTok API.
+OPENTOK_API_SECRET='1924d525ecc8ef5ffa70c05dae24037a7a88f921'
+OPENTOK_API_KEY='44867752'
 
 # Globals.
 waiting_list={}
 
 dictionary_things = [
-['Animal', 'חיה', 'Animal']
-['Bread', 'לחם', 'pan']
-['fire', 'אש', 'fuego']
-['Country', 'ארץ', 'país']
-['Day', 'יום', 'día']
-['Gold', 'זהב', 'oro']
-['Paper', 'נייר', 'papel']
-['Voice', 'קול', 'voz']
-['Word', 'מילה', 'palabra']
-['Sky', 'שמיים', 'cielo']
+	['Animal', 'חיה', 'animal']
+	['Bread', 'לחם', 'pan']
+	['Fire', 'אש', 'fuego']
+	['Country', 'ארץ', 'país']
+	['Day', 'יום', 'día']
+	['Gold', 'זהב', 'oro']
+	['Paper', 'נייר', 'papel']
+	['Voice', 'קול', 'voz']
+	['Word', 'מילה', 'palabra']
+	['Sky', 'שמיים', 'cielo']
 ]
 
 dictionary_operations = [
-['Get', 'השג', 'conseguir']
-['Give', 'תן', 'dar']
-['Go', 'לך', 'ir']
-['Make', 'עשה', 'hacer']
-['Put', 'שים', 'poner']
-['Take', 'קח', 'tomar']
-['Be', 'היה', 'ser']
-['Have', 'יש', 'tener']
-['Say', 'אמור', 'decir']
-['Will', 'מוכן', 'voluntad']
+	['Get', 'השג', 'conseguir']
+	['Give', 'תן', 'dar']
+	['Go', 'לך', 'ir']
+	['Make', 'עשה', 'hacer']
+	['Put', 'שים', 'poner']
+	['Take', 'קח', 'tomar']
+	['Be', 'היה', 'ser']
+	['Have', 'יש', 'tener']
+	['Say', 'אמור', 'decir']
+	['Will', 'מוכן', 'voluntad']
 ]
 
 dictionary_qualities = [
-['Black', 'שחור', 'negro']
-['Cheap', 'זול', 'barato']
-['Clean', 'נקי', 'limpio']
-['Clear', 'שקוף', 'claro']
-['Strong', 'חזק', 'fuerte']
-['Happy', 'שמח', 'feliz']
-['Hard', 'קשה', 'duro']
-['Dark', 'אפל', 'oscuro']
-['Old', 'ישן', 'viejo']
-['Sad', 'עצוב', 'triste']
+	['Black', 'שחור', 'negro']
+	['Cheap', 'זול', 'barato']
+	['Clean', 'נקי', 'limpio']
+	['Clear', 'שקוף', 'claro']
+	['Strong', 'חזק', 'fuerte']
+	['Happy', 'שמח', 'feliz']
+	['Hard', 'קשה', 'duro']
+	['Dark', 'אפל', 'oscuro']
+	['Old', 'ישן', 'viejo']
+	['Sad', 'עצוב', 'triste']
 ]
 
 dictionaries=[dictionary_qualities, dictionary_operations, dictionary_things]
 
-# Functions.
+# OpenTok stuff.
+generate_OT_keys=(cb)->
+	console.log 'generate_OT_keys'
+	# Server creates a session and two tokens for each conversation.
+	ot=new OpenTok OPENTOK_API_KEY,OPENTOK_API_SECRET
+	#console.log ot
+	# Generate a basic session. Or you could use an existing session ID.
+	ot.createSession (error,result)->
+		if (error)
+			console.log 'Error creating session:',error
+			return
+		console.log "Session ID: #{result.sessionId}"
+		# Use the role value appropriate for the user:
+		tokenOptions=role:'publisher'
+		# tokenOptions.data = "username=bob";
+		# Generate two tokens.
+		token = ot.generateToken result.sessionId,tokenOptions
+		cb result.sessionId,token
+
+# Utilities.
 pick_words = ->
   results = []
   for dictionary of dictionaries
     result = dictionary[Math.floor(Math.random() * dictionary.length)]
     results.push result  unless result of results
   results
-  
+
 uuid=->JSON.stringify Math.random()*1e16
 
 # App!
@@ -88,6 +112,8 @@ require('zappajs') 3000,'0.0.0.0',->
 			div 'class':'slot'
 			div 'class':'slot'
 			div 'class':'slot'
+			video id:'myself'
+			video id:'partner'
 		section id:'give-score',->
 			input type:'range'
 		section id:'receive-score',->
@@ -102,6 +128,7 @@ require('zappajs') 3000,'0.0.0.0',->
 			title:'Jibbrit'
 			scripts:'''
 				/zappa/Zappa-simple.js
+				//static.opentok.com/webrtc/v2.2/js/opentok.min.js
 				/app.js
 				'''.match /[^\s]+/g
 			stylesheets:'''
@@ -127,6 +154,9 @@ body
 
 section
 	display none
+
+.OT_publisher
+	display none
 '''
 	# Server side SIO events.
 	@on 'find me a partner':->
@@ -137,33 +167,46 @@ section
 			@broadcast_to 'your partner left'
 			@leave r
 		# Try to match from waiting list.
-		k="#{@data.mylang}:#{@data.herlang}"
-		if waiting_list[k]
-			p=waiting_list[k].shift()
-			@ack 'found parner in room '+p
-			@join p
-			@emit 'start playing',p
-			@broadcast_to 'start playing',p
 		# Otherwise, add myself to waiting list.
-		else
+		k="#{@data.mylang}:#{@data.herlang}"
+		if not waiting_list[k]
 			# Create room UUID.
 			r=@client.room=uuid()
 			@join r
 			k="#{@data.herlang}:#{@data.mylang}"
 			if k of waiting_list then waiting_list[k].push r else waiting_list[k]=[r]
 			@ack 'please hold'
+		else
+			p=waiting_list[k].shift()
+			@ack 'found partner in room '+p
+			@join p
+			# Generate OT keys.
+			generate_OT_keys (s,t)=>
+				@broadcast_to p,'start playing',[s,t]
 
 	# Client side code.
 	@client '/app.js':->
 		@connect()
 
 		# Client side SIO events.
-		@on 'start playing':->
-			console.log 'playing room:',@data
-			$ '#waiting,#game'
-			.toggle()
 		@on 'your partner left':->
 			console.log 'abandoned:',@data
+
+		@on 'start playing':->
+			console.log 'playing room:',@data
+			# Client publishes and subscribes on the session.
+			OPENTOK_API_KEY='44867752'
+			session=OT.initSession OPENTOK_API_KEY,@data[0]
+			session.connect @data[1],(error)->
+				publisher=OT.initPublisher()
+				# the target is the element (div) to be replaced by video
+				session.publish publisher,'#myself'
+
+			session.on 'streamCreated',(ev)->
+				session.subscribe ev.stream,'#partner'
+			$ '#waiting,#game'
+			.toggle()
+
 
 		$ =>
 			$ 'html'
