@@ -94,6 +94,7 @@ require('zappajs') 3000,'0.0.0.0',->
 			stylesheets:'''
 				//cdnjs.cloudflare.com/ajax/libs/font-awesome/4.1.0/css/font-awesome.min.css
 				//css-spinners.com/css/spinner/timer.css
+				//fonts.googleapis.com/css?family=Changa+One|Inder
 				'''.match /[^\s]+/g
 			style: stylus.render '''
 back=#0d4561
@@ -106,7 +107,7 @@ pale=#b0dcf2
 	display none
 
 body
-	font-family Ubuntu,sans-serif
+	font-family Inder,sans-serif
 	font-size 1.3rem
 	margin 0 auto
 	background-image url(/bg.jpg)
@@ -121,12 +122,17 @@ section
 	max-width 30em
 	position relative
 
+#slot-machine
+	display inline-block
+
 .wrapper
 	margin 1em
 	display inline-block
 	height 6em
 	overflow hidden
 	background white
+	font-family "Changa One"
+	font-size 1.8rem
 
 	span
 		display block
@@ -158,6 +164,7 @@ button
 	top  0
 	right  0
 	background  red
+	font-family "Changa One"
 
 .OT_subscriber
 	position fixed
