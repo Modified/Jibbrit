@@ -10,14 +10,55 @@ stylus=require 'stylus'
 # Globals.
 waiting_list={}
 
-# Functions.
-pick_3=(large_list)->
-	results=[]
-	until results.length is 3
-		result=large_list[Math.floor(Math.random()*large_list.length)]
-		results.push result unless result of results
-	results
+dictionary_things = [
+['Animal', 'חיה', 'Animal']
+['Bread', 'לחם', 'pan']
+['fire', 'אש', 'fuego']
+['Country', 'ארץ', 'país']
+['Day', 'יום', 'día']
+['Gold', 'זהב', 'oro']
+['Paper', 'נייר', 'papel']
+['Voice', 'קול', 'voz']
+['Word', 'מילה', 'palabra']
+['Sky', 'שמיים', 'cielo']
+]
 
+dictionary_operations = [
+['Get', 'השג', 'conseguir']
+['Give', 'תן', 'dar']
+['Go', 'לך', 'ir']
+['Make', 'עשה', 'hacer']
+['Put', 'שים', 'poner']
+['Take', 'קח', 'tomar']
+['Be', 'היה', 'ser']
+['Have', 'יש', 'tener']
+['Say', 'אמור', 'decir']
+['Will', 'מוכן', 'voluntad']
+]
+
+dictionary_qualities = [
+['Black', 'שחור', 'negro']
+['Cheap', 'זול', 'barato']
+['Clean', 'נקי', 'limpio']
+['Clear', 'שקוף', 'claro']
+['Strong', 'חזק', 'fuerte']
+['Happy', 'שמח', 'feliz']
+['Hard', 'קשה', 'duro']
+['Dark', 'אפל', 'oscuro']
+['Old', 'ישן', 'viejo']
+['Sad', 'עצוב', 'triste']
+]
+
+dictionaries=[dictionary_qualities, dictionary_operations, dictionary_things]
+
+# Functions.
+pick_words = ->
+  results = []
+  for dictionary of dictionaries
+    result = dictionary[Math.floor(Math.random() * dictionary.length)]
+    results.push result  unless result of results
+  results
+  
 uuid=->JSON.stringify Math.random()*1e16
 
 # App!
