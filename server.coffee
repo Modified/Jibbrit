@@ -76,31 +76,43 @@ body
 section
 	display none
 '''
-
+	# Server side SIO events.
 	@on 'find me a partner':->
-		console.log 'find me a partner',@data
+		console.log 'find me a partner:',@data
 		# Leave previous room, if was in any.
 		r=@client.room
 		if r
 			@broadcast_to 'your partner left'
 			@leave r
 		# Try to match from waiting list.
-		k="#{mylang}:#{herlang}"
+		k="#{@data.mylang}:#{@data.herlang}"
 		if waiting_list[k]
-			p=shift waiting_list[k]
-			@ack 'found parner in room',p
+			p=waiting_list[k].shift()
+			@ack 'found parner in room'+p
+			@join p
+			@emit 'start playing',p
 			@broadcast_to 'start playing',p
 		# Otherwise, add myself to waiting list.
 		else
 			# Create room UUID.
 			r=@client.room=uuid()
 			@join r
-			k="#{herlang}:#{mylang}"
+			k="#{@data.herlang}:#{@data.mylang}"
 			if k of waiting_list then waiting_list[k].push r else waiting_list[k]=[r]
 			@ack 'please hold'
 
+	# Client side code.
 	@client '/app.js':->
 		@connect()
+
+		# Client side SIO events.
+		@on 'start playing':->
+			console.log @data
+			$ '#waiting,#game'
+			.toggle()
+		@on 'your partner left':->
+			console.log @data
+
 		$ =>
 			$ 'html'
 			.addClass 'jib'
@@ -111,7 +123,7 @@ section
 			# Show setup page!
 			$ '#setup'
 			.show()
-			$ '#setup  button'
+			$ '#setup button'
 			.click (ev)=>
 				ev.preventDefault()
 				$ '#setup,#waiting'
@@ -120,20 +132,10 @@ section
 				d=mylang:$('#mylang').val(),herlang:$('#herlang').val()
 				console.log d
 				# Tell server to find me a matching partner.
-				@emit 'find me a partner',d,->
-					console.log 'find me a partner ack',@data
+				@emit 'find me a partner',d,(r)->
+					console.log 'find me a partner ack:',r
 
-			# Start playing.
-			@on 'start playing':->
-				console.log @data
-				$ '#waiting,#game'
-				.toggle()
-			@on 'your partner left':->
-				console.log @data
-
-			###
-			$('body').on 'click','button.trinket',(ev)->
-				total+=parseInt(($(ev.target).text().match /\$(\d+)/)[1])
-				$('.pay').html "<img src=\"/paypal.jpg\"> Purchase total: $#{total}.<sup>00</sup>"
-				false
-###
+#$('body').on 'click','button.trinket',(ev)->
+#	total+=parseInt(($(ev.target).text().match /\$(\d+)/)[1])
+#	$('.pay').html "<img src=\"/paypal.jpg\"> Purchase total: $#{total}.<sup>00</sup>"
+#	false
