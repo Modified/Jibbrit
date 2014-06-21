@@ -50,7 +50,8 @@ require('zappajs') 3000,'0.0.0.0',->
 	@view index:->
 		header ''
 		section id:'setup',->
-			label ->
+			img src:'/splash.png'
+			label style:'display:none',->
 				'Name'
 				input type:'text',placeholder:'My name is…'
 			input id:'mylang',type:'text',placeholder:'My language'
@@ -58,15 +59,17 @@ require('zappajs') 3000,'0.0.0.0',->
 			button -> 'Go'
 		section id:'waiting',->
 			div 'class':'spinner timer'
-			p 'Waiting for other player to connect…'
+			p 'Looking for a match…'
 		section id:'game',->
 			button id:'play',->
 				'Play!'
-			div 'class':'slot'
-			div 'class':'slot'
-			div 'class':'slot'
-			video id:'myself'
-			video id:'partner'
+			span id:'slot-machine',->
+				div 'class':'wrapper',->
+					div 'class':'slot'
+				div 'class':'wrapper',->
+					div 'class':'slot'
+				div 'class':'wrapper',->
+					div 'class':'slot'
 			div id:'countdown'
 			div id:'total-score'
 			section id:'give-score',->
@@ -76,6 +79,8 @@ require('zappajs') 3000,'0.0.0.0',->
 			section id:'next-round',->
 				p ->'Next Round…'
 				input type:'text',placeholder:'Wildcard'
+		video id:'myself'
+		video id:'partner'
 
 	# Catchall route??? Eh, no.
 	@get '/':->
@@ -102,16 +107,68 @@ pale=#b0dcf2
 
 body
 	font-family Ubuntu,sans-serif
-	font-size large
+	font-size 1.3rem
 	margin 0 auto
-	background-color back
-	color text
+	background-image url(/bg.jpg)
+	background-repeat no-repeat
+	background-size cover
+	background-attachment fixed
+	color black
 
 section
 	display none
+	margin 1em auto
+	max-width 30em
+	position relative
+
+.wrapper
+	margin 1em
+	display inline-block
+	height 6em
+	overflow hidden
+	background white
+
+	span
+		display block
+		margin 0.5em
+
+#setup img
+	margin 0 auto
+	display block
+
+#game
+	text-align right
+	padding-top 1em
+
+input,
+button
+	display block
+	margin 1em auto
+	padding 0.5em
+	outline none
+	border none
+	font-size 1.3rem
+	background-color #d94735
+	border-radius 1em
+button
+	font-size 1.8rem
+
+#countdown
+	position  absolute
+	top  0
+	right  0
+	background  red
+
+.OT_subscriber
+	position fixed
+	top 1em
+	left 1em
 
 .OT_publisher
-	display none
+	position fixed
+	bottom 1em
+	left 1em
+	z-index -1
 '''
 	# Server side SIO events.
 	@on 'find me a partner':->
@@ -149,13 +206,12 @@ section
 	@client '/app.js':->
 		@connect()
 
-		pick_words = ->
-
-			results = []
-			for d of dictionaries
-				r = d[Math.floor(Math.random() * d.length)]
-				results.push r unless r in results
-			results
+		pick_words=->
+			[
+				['אנימל', 'חיה', 'animal']
+				['דסיר', 'אמור', 'decir']
+				['נגרו', 'שחור', 'negro']
+			]
 
 		# Dictionary.
 		dictionary_things = [
@@ -180,7 +236,6 @@ section
 			['Be', 'היה', 'ser']
 			['Have', 'יש', 'tener']
 			['Say', 'אמור', 'decir']
-			['Will', 'מוכן', 'voluntad']
 		]
 		dictionary_qualities = [
 			['Black', 'שחור', 'negro']
@@ -222,15 +277,32 @@ section
 
 		# Slot roulette.
 		spin_slot=(i,w)=>
+			#console.log i,w
 			@emit 'picked word',[i,w]
+
+		cherries=['Bread','לחם','pan','Fire','אש','fuego','Country','ארץ','país','Day','יום','día','Gold','זהב','oro','Paper','נייר','papel','Voice','קול','voz','Word','מילה','palabra','Sky','שמיים','cielo']
 
 		@on 'picked word':->
 			[i,w]=@data
+			console.log i,w
 			ss=$ '.slot'
-			$ ss[i]
-			.append $ '<span>#{w[0]}'
-			.append $ '<span>#{w[1]}'
-			.append $ '<span>#{w[2]}'
+			# Randomize.
+			s=$ ss[i]
+			s.empty()
+			cherries.forEach (v)->
+				s.append($('<span>').text(v))
+			# Animate.
+			s
+			.stop()
+			.css 'margin-top':'-999px'
+			.animate({'margin-top':'0'},5999,'swing',->
+				# Show picked word.
+				s
+				.empty()
+				.append($('<span>').text(w[0]))
+				.append($('<span>').text(w[1]))
+				.append($('<span>').text(w[2]))
+			)
 
 		start_countdown= =>
 			count_down= =>
@@ -259,6 +331,8 @@ section
 			sect=$ 'section'
 
 			# Show setup page!
+			$ 'body'
+			.css background:'none'
 			$ '#setup'
 			.show()
 			$ '#setup button'
@@ -266,6 +340,7 @@ section
 				ev.preventDefault()
 				$ '#setup,#waiting'
 				.toggle()
+				$('body').removeAttr('style')
 				# What's in the form?
 				d=mylang:$('#mylang').val(),herlang:$('#herlang').val()
 				console.log d
