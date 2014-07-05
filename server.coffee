@@ -38,7 +38,8 @@ generate_OT_keys=(cb)->
 uuid=->JSON.stringify Math.random()*1e16
 
 # App!
-require('zappajs') 3000,'0.0.0.0',->
+PORT=process.env.PORT ? 3000
+require('zappajs') POST,'0.0.0.0',->
 	@use @app.logger
 	@use static:__dirname+'/assets'
 	@use 'partials'
