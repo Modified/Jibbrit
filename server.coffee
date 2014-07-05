@@ -39,7 +39,7 @@ uuid=->JSON.stringify Math.random()*1e16
 
 # App!
 PORT=process.env.PORT ? 3000
-require('zappajs') POST,'0.0.0.0',->
+require('zappajs') PORT,'0.0.0.0',->
 	@use @app.logger
 	@use static:__dirname+'/assets'
 	@use 'partials'
