@@ -15,7 +15,8 @@
 		"zappajs": "~0.4.22",
 		"zappajs-partials":"",
 		"coffee-script": "1.7.x",
-		"stylus":""
+		"stylus":"0.42.x",
+		"opentok":"2.2.x"
 	},
 	"scripts":{
 		"start":"coffee server.coffee",
